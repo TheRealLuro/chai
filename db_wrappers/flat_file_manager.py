@@ -29,6 +29,9 @@ class FlatFileManager:
         Hint: Use os.makedirs() and its `exist_ok` parameter.
         """
         os.makedirs(self.storage_dir, exist_ok=True)
+        os.makedirs(self.storage_dir, exist_ok=True)
+        
+
 
     def _init_index(self) -> None:
         """
@@ -46,6 +49,15 @@ class FlatFileManager:
             with open(index_file, 'r') as f:
                 self.conversations_index = json.load(f)
 
+        #check if index file exists
+        if not os.path.exists(index_file):
+            #create and save intial empty index file
+            self.save_index()
+            
+        with open(index_file, 'r') as f:
+            self.conversations_index = json.load(f)
+        
+
     def save_index(self) -> None:
         """
         --- TODO 3: Save the conversations index to disk ---
@@ -57,6 +69,9 @@ class FlatFileManager:
         index_file = os.path.join(self.storage_dir, "conversations.json")
         with open(index_file, 'w') as f:
             json.dump(self.conversations_index, f, indent=2)
+        
+        with open(index_file, 'w') as f:
+            json.dump(self.conversations_index, f, indent=4)
 
     def get_conversation(self, conversation_id: str) -> List[any]:
         """
@@ -79,6 +94,19 @@ class FlatFileManager:
             return messages
         except FileNotFoundError:
             return []
+        if conversation_id not in self.conversations_index:
+            return []
+            
+
+        filepath = self.conversations_index.get(conversation_id)
+
+        with open(filepath, 'r') as f:
+            messages = json.load(f)
+            return messages
+
+        
+        
+        
 
     def save_conversation(self, conversation_id: str, relative_filepath: str, messages: List[any]) -> None:
         """
@@ -101,6 +129,16 @@ class FlatFileManager:
         filepath = os.path.join(self.storage_dir, relative_filepath)
         with open(filepath, 'w') as f:
             json.dump(messages, f, indent=2)
+        filepath = os.path.join(self.storage_dir, relative_filepath)
+
+        self.conversations_index[conversation_id] = filepath
+
+        self.save_index()
+
+        with open(os.path.join(filepath), 'w') as f:
+            json.dump(messages, f, indent=4)
+        
+
 
     def run_tests(self):
         print("Testing FlatFileManager._ensure_storage_exists()")
