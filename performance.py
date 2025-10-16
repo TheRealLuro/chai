@@ -1,11 +1,13 @@
-import time
-import random
-import string
+import random, os, time, string
 from db_wrappers.flat_file_manager import FlatFileManager
 from db_wrappers.mongodb_manager import MongoDBManager
 
-PASSWORD = ""
-CONNECTION_STRING = f""
+from dotenv import load_dotenv
+load_dotenv("mongo.env")
+
+user = "Luro"
+password = os.getenv("MONGO_KEY")
+CONNECTION_STRING = f"mongodb+srv://{user}:{password}@cluster0.hosn53b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 def random_string(length=20):
     """Generate a random string for test data."""
