@@ -3,7 +3,11 @@ from datetime import datetime, UTC
 from typing import List, Dict, Optional
 from pymongo import MongoClient
 from pymongo.collection import Collection
+from dotenv import load_dotenv
+load_dotenv("mongo.env")
 
+user = "Luro"
+password = os.getenv("MONGO_KEY")
 
 class MongoDBManager:
     """
@@ -11,7 +15,7 @@ class MongoDBManager:
     Each conversation is stored as a single document with an array of messages.
     """
 
-    def __init__(self, connection_string: str = "mongodb://localhost:27017/", database_name: str = "chai_db"):
+    def __init__(self, connection_string: str = f"mongodb+srv://{user}:{password}@cluster0.hosn53b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", database_name: str = "chai_db"):
         """
         Initializes the MongoDBManager.
 
@@ -27,8 +31,8 @@ class MongoDBManager:
         # Hint: self.client[database_name] gets a database
         # Hint: db[collection_name] gets a collection - use "conversations" as the collection_name
         self.client = MongoClient(connection_string)
-        self.db = None #fixme!
-        self.conversations = None #fixme!
+        self.db = self.client[database_name]
+        self.conversations = self.db["conversations"]
 
         self._ensure_indexes()
 
@@ -61,7 +65,8 @@ class MongoDBManager:
 
         Hint: find_one({"user_id": user_id, "thread_name": thread_name})
         """
-        # document = self.conversations. fixme!
+        document = self.conversations.find_one({"user_id": user_id, "thread_name": thread_name})
+
         if not document or "messages" not in document:
             return []
         return document["messages"]
@@ -92,11 +97,18 @@ class MongoDBManager:
 
         Hint: self.conversations.update_one({filter goes here}, {update goes here}, upsert=True)
         """
-        conversation_id = f"{}_{}" # fixme!
+        conversation_id = f"{user_id}_{thread_name}"
         # fixme! add fields to document
         document = {
+            "_id": conversation_id,
+            "user_id": user_id,
+            "thread_name": thread_name,
+            "messages": messages,
+            "created_at": datetime.now(UTC).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat()
         }
-        # fixme! self.conversations.
+
+        self.conversations.update_one({"_id": conversation_id}, {"$set": document}, upsert=True)
 
     def append_message(self, user_id: str, thread_name: str, message: Dict) -> None:
         """
@@ -120,19 +132,19 @@ class MongoDBManager:
         Hint: $push adds to an array, $setOnInsert sets values only on insert
         Hint: update_one(filter, {"$push": {...}, "$set": {...}, "$setOnInsert": {...}}, upsert=True)
         """
-        conversation_id = "" #fixme!
-        # fixme! fill out update
+        conversation_id = f"{user_id}_{thread_name}"
         update = {
-            "$push": {},
-            "$set": {},
+            "$push": {"messages": message},
+            "$set": {"updated_at": datetime.now(UTC).isoformat()},
             "$setOnInsert": {
+                "user_id": user_id,
+                "thread_name": thread_name,
+                "created_at": datetime.now(UTC).isoformat()
             }
         }
 
         self.conversations.update_one(
-            {"_id": conversation_id},
-            update,
-            upsert=True
+            {"_id": conversation_id}, update, upsert=True
         )
 
     def list_user_threads(self, user_id: str) -> List[str]:
@@ -151,8 +163,10 @@ class MongoDBManager:
 
         Hint: list(self.conversations.find({"user_id": user_id}, {"thread_name": True, "_id": False}))
         """
-        matches = list(self.conversations.find({}, {})) # fixme!
+        matches = list(self.conversations.find({"user_id": user_id}, {"thread_name": True, "_id": False}))
+
         thread_names = []
+
         for record in matches:
             thread_names.append(record["thread_name"])
         return thread_names
@@ -168,7 +182,9 @@ class MongoDBManager:
         Returns:
             bool: True if a conversation was deleted, False otherwise
         """
+
         conversation_id = f"{user_id}_{thread_name}"
+        
         result = self.conversations.delete_one({"_id": conversation_id})
         return result.deleted_count > 0
 
@@ -192,8 +208,7 @@ if __name__ == "__main__":
     print("Testing MongoDBManager")
 
     # Update this connection string for your setup
-    connection_string = "mongodb://localhost:27017/"
-    # connection_string = "mongodb+srv://username:password@cluster.mongodb.net/"
+    connection_string = f"mongodb+srv://{user}:{password}@cluster0.hosn53b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
     manager = MongoDBManager(connection_string=connection_string, database_name="chai_test_db")
 

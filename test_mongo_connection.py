@@ -1,5 +1,7 @@
 import os
 from pymongo import MongoClient
+from dotenv import load_dotenv
+load_dotenv("mongo.env")
 
 # Update this connection string for your MongoDB setup
 # For local: "mongodb://localhost:27017/"
@@ -11,9 +13,10 @@ from pymongo import MongoClient
 # For Windows Command Prompt: set MONGO_KEY=password_here
 # For Windows PowerShell: $env:MONGO_KEY = "password_here"
 # For Mac/Linux: export MONGO_KEY="password_here"
+user = "Luro"
 password = os.getenv("MONGO_KEY")
 # Edit the url to use the url it gives you - remember to enter username and password as is done below
-connection_string = f"mongodb+srv://Luro:{password}@cluster0.hosn53b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+connection_string = f"mongodb+srv://{user}:{password}@cluster0.hosn53b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 
 try:
